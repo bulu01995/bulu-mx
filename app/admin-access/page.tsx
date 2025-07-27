@@ -1,42 +1,44 @@
 "use client"
-
+import { useState, useEffect } from "react"
 import type React from "react"
 
-import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Lock, Shield, Eye, EyeOff } from "lucide-react"
+import { Key, Shield, AlertCircle, CheckCircle } from "lucide-react"
 
 export default function AdminAccessPage() {
-  const [key, setKey] = useState("")
-  const [error, setError] = useState("")
+  const [accessKey, setAccessKey] = useState("")
   const [loading, setLoading] = useState(false)
-  const [showKey, setShowKey] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
   const router = useRouter()
   const searchParams = useSearchParams()
 
   useEffect(() => {
-    // Check if key is provided in URL params
+    // Check if key is provided in URL parameters
     const urlKey = searchParams.get("key")
     if (urlKey) {
-      setKey(urlKey)
-      // Auto-verify if key is in URL
-      verifyKey(urlKey)
+      setAccessKey(urlKey)
+      handleSubmit(null, urlKey)
     }
   }, [searchParams])
 
-  const verifyKey = async (accessKey?: string) => {
-    const keyToVerify = accessKey || key
-    if (!keyToVerify.trim()) {
+  const handleSubmit = async (e: React.FormEvent | null, keyFromUrl?: string) => {
+    if (e) e.preventDefault()
+
+    const keyToUse = keyFromUrl || accessKey
+
+    if (!keyToUse.trim()) {
       setError("Please enter an access key")
       return
     }
 
     setLoading(true)
     setError("")
+    setSuccess("")
 
     try {
       const response = await fetch("/api/admin/verify-key", {
@@ -44,26 +46,25 @@ export default function AdminAccessPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ key: keyToVerify }),
+        body: JSON.stringify({ key: keyToUse }),
       })
 
       const data = await response.json()
 
       if (data.success) {
-        router.push("/admin")
+        setSuccess("Access granted! Redirecting to admin panel...")
+        setTimeout(() => {
+          router.push("/admin")
+        }, 1500)
       } else {
-        setError("Invalid access key. Please contact the administrator.")
+        setError(data.message || "Invalid access key")
       }
     } catch (error) {
-      setError("An error occurred. Please try again.")
+      setError("Failed to verify access key. Please try again.")
+      console.error("Access verification error:", error)
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    verifyKey()
   }
 
   return (
@@ -74,48 +75,58 @@ export default function AdminAccessPage() {
             <Shield className="h-6 w-6 text-white" />
           </div>
           <CardTitle className="text-2xl font-bold text-gray-900">Admin Access</CardTitle>
-          <CardDescription>Enter your access key to continue to the admin panel</CardDescription>
+          <CardDescription className="text-gray-600">
+            Enter your access key to continue to the admin panel
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="access-key" className="text-sm font-medium text-gray-700">
+              <label htmlFor="accessKey" className="text-sm font-medium text-gray-700">
                 Access Key
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                  id="access-key"
-                  type={showKey ? "text" : "password"}
-                  value={key}
-                  onChange={(e) => setKey(e.target.value)}
-                  placeholder="Enter admin access key"
-                  className="pl-10 pr-10"
+                  id="accessKey"
+                  type="password"
+                  placeholder="Enter your access key"
+                  value={accessKey}
+                  onChange={(e) => setAccessKey(e.target.value)}
+                  className="pl-10"
                   disabled={loading}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowKey(!showKey)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
               </div>
             </div>
 
             {error && (
               <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading || !key.trim()}>
-              {loading ? "Verifying..." : "Access Admin Panel"}
+            {success && (
+              <Alert className="border-green-200 bg-green-50">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800">{success}</AlertDescription>
+              </Alert>
+            )}
+
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Verifying...
+                </>
+              ) : (
+                "Access Admin Panel"
+              )}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">This is a secure area. Unauthorized access is prohibited.</p>
+            <p className="text-xs text-gray-500">Authorized personnel only. All access attempts are logged.</p>
           </div>
         </CardContent>
       </Card>

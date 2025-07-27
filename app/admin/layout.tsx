@@ -151,11 +151,33 @@ export default function AdminLayout({
 
   const handleLogout = async () => {
     try {
-      // Clear the admin access cookie
-      document.cookie = "admin_access=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-      router.push("/admin-access")
+      setLoading(true)
+
+      // Call the logout API to clear the cookie properly
+      const response = await fetch("/api/admin/logout", {
+        method: "POST",
+      })
+
+      if (response.ok) {
+        // Clear local state
+        setHasAccess(false)
+        // Redirect to admin access page
+        router.push("/admin-access")
+      } else {
+        console.error("Logout failed")
+        // Fallback: clear cookie manually and redirect
+        document.cookie = "admin_access=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+        setHasAccess(false)
+        router.push("/admin-access")
+      }
     } catch (error) {
       console.error("Logout error:", error)
+      // Fallback: clear cookie manually and redirect
+      document.cookie = "admin_access=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+      setHasAccess(false)
+      router.push("/admin-access")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -328,10 +350,15 @@ export default function AdminLayout({
                   variant="ghost"
                   size="sm"
                   onClick={handleLogout}
+                  disabled={loading}
                   className="text-gray-500 hover:text-red-600"
                   title="Logout"
                 >
-                  <LogOut className="h-4 w-4" />
+                  {loading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                  ) : (
+                    <LogOut className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -369,10 +396,15 @@ export default function AdminLayout({
                   variant="outline"
                   size="sm"
                   onClick={handleLogout}
+                  disabled={loading}
                   className="text-gray-600 hover:text-red-600 border-gray-300 bg-transparent"
                 >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
+                  {loading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
+                  ) : (
+                    <LogOut className="h-4 w-4 mr-2" />
+                  )}
+                  {loading ? "Logging out..." : "Logout"}
                 </Button>
               </div>
             </div>
