@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Lock, Shield, Eye, EyeOff, Loader2, CheckCircle } from "lucide-react"
+import { Lock, Shield, Eye, EyeOff, Loader2, CheckCircle, AlertCircle } from "lucide-react"
 
 export default function AdminAccessPage() {
   const [key, setKey] = useState("")
@@ -41,23 +41,29 @@ export default function AdminAccessPage() {
     setSuccess("")
 
     try {
+      console.log("Sending verification request...")
+
       const response = await fetch("/api/admin/verify-key", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ key: keyToVerify }),
+        credentials: "include",
       })
 
+      console.log("Response status:", response.status)
       const data = await response.json()
+      console.log("Response data:", data)
 
       if (response.ok && data.success) {
         setSuccess("Access granted! Redirecting to admin panel...")
-        // Small delay to show success message
+
+        // Wait a bit for the cookie to be set, then redirect
         setTimeout(() => {
-          router.push("/admin")
-          router.refresh()
-        }, 1500)
+          console.log("Redirecting to admin...")
+          window.location.href = "/admin"
+        }, 1000)
       } else {
         setError(data.error || "Invalid access key. Please contact the administrator.")
       }
@@ -114,6 +120,7 @@ export default function AdminAccessPage() {
 
             {error && (
               <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
