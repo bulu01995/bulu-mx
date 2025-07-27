@@ -1,17 +1,19 @@
 "use client"
 
 import type React from "react"
+
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Lock, Shield, Eye, EyeOff, Loader2 } from "lucide-react"
+import { Lock, Shield, Eye, EyeOff, Loader2, CheckCircle } from "lucide-react"
 
 export default function AdminAccessPage() {
   const [key, setKey] = useState("")
   const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
   const [loading, setLoading] = useState(false)
   const [showKey, setShowKey] = useState(false)
   const router = useRouter()
@@ -36,6 +38,7 @@ export default function AdminAccessPage() {
 
     setLoading(true)
     setError("")
+    setSuccess("")
 
     try {
       const response = await fetch("/api/admin/verify-key", {
@@ -49,11 +52,12 @@ export default function AdminAccessPage() {
       const data = await response.json()
 
       if (response.ok && data.success) {
-        // Small delay to show success state
+        setSuccess("Access granted! Redirecting to admin panel...")
+        // Small delay to show success message
         setTimeout(() => {
           router.push("/admin")
           router.refresh()
-        }, 500)
+        }, 1500)
       } else {
         setError(data.error || "Invalid access key. Please contact the administrator.")
       }
@@ -114,6 +118,13 @@ export default function AdminAccessPage() {
               </Alert>
             )}
 
+            {success && (
+              <Alert className="border-green-200 bg-green-50">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800">{success}</AlertDescription>
+              </Alert>
+            )}
+
             <Button type="submit" className="w-full" disabled={loading || !key.trim()}>
               {loading ? (
                 <>
@@ -128,6 +139,7 @@ export default function AdminAccessPage() {
 
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500">This is a secure area. Unauthorized access is prohibited.</p>
+            <p className="text-xs text-gray-400 mt-1">All access attempts are logged for security purposes.</p>
           </div>
         </CardContent>
       </Card>

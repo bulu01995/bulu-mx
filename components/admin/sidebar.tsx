@@ -1,107 +1,158 @@
-import { LayoutDashboard, ListChecks, Plus, Settings, ShoppingBag, ShoppingBasket, Users, Shield } from "lucide-react"
+"use client"
 
-import { MainNav } from "@/components/main-nav"
-import { SidebarNavItem } from "@/components/sidebar-nav-item"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import {
+  LayoutDashboard,
+  Users,
+  Shield,
+  CreditCard,
+  HardHat,
+  Settings,
+  BarChart3,
+  LogOut,
+  Building2,
+} from "lucide-react"
 
-interface SidebarProps {
-  isSuperAdmin?: boolean
+interface AdminSidebarProps {
+  onLogout: () => void
+  loggingOut: boolean
 }
 
-export function Sidebar({ isSuperAdmin }: SidebarProps) {
-  const navigation = [
-    {
-      title: "Getting Started",
-      items: [
-        {
-          title: "Dashboard",
-          href: "/admin",
-          icon: LayoutDashboard,
-        },
-      ],
-    },
-    {
-      title: "Products",
-      items: [
-        {
-          title: "Products",
-          href: "/admin/products",
-          icon: ShoppingBag,
-        },
-        {
-          title: "Categories",
-          href: "/admin/categories",
-          icon: ShoppingBasket,
-        },
-        {
-          title: "Add New",
-          href: "/admin/products/new",
-          icon: Plus,
-        },
-      ],
-    },
-    {
-      title: "Orders",
-      items: [
-        {
-          title: "All Orders",
-          href: "/admin/orders",
-          icon: ListChecks,
-        },
-      ],
-    },
-    {
-      title: "Insurance Leads",
-      icon: Shield,
-      href: "/admin/insurance",
-      items: [
-        { title: "All Leads", href: "/admin/insurance" },
-        { title: "Car Insurance", href: "/admin/insurance?type=car-insurance" },
-        { title: "Bike Insurance", href: "/admin/insurance?type=bike-insurance" },
-        { title: "Health Insurance", href: "/admin/insurance?type=health-insurance" },
-        { title: "Term Insurance", href: "/admin/insurance?type=term-insurance" },
-        { title: "Investment Plans", href: "/admin/insurance?type=investment-plans" },
-        { title: "Business Insurance", href: "/admin/insurance?type=business-insurance" },
-        { title: "Family Health", href: "/admin/insurance?type=family-health-insurance" },
-        { title: "Guaranteed Returns", href: "/admin/insurance?type=guaranteed-return-plans" },
-      ],
-    },
-    {
-      title: "Settings",
-      items: [
-        {
-          title: "Settings",
-          href: "/admin/settings",
-          icon: Settings,
-        },
-      ],
-    },
-  ]
+const navigation = [
+  {
+    name: "Dashboard",
+    href: "/admin",
+    icon: LayoutDashboard,
+  },
+  {
+    name: "Analytics",
+    href: "/admin/analytics",
+    icon: BarChart3,
+  },
+  {
+    name: "Users",
+    href: "/admin/users",
+    icon: Users,
+  },
+  {
+    name: "Insurance",
+    href: "/admin/insurance",
+    icon: Shield,
+  },
+  {
+    name: "Loans",
+    href: "/admin/loans",
+    icon: CreditCard,
+  },
+  {
+    name: "Labour",
+    href: "/admin/labour",
+    icon: HardHat,
+    children: [
+      {
+        name: "All Labour",
+        href: "/admin/labour/all",
+      },
+      {
+        name: "Add Labour",
+        href: "/admin/labour/add",
+      },
+      {
+        name: "Applications",
+        href: "/admin/labour/applications",
+      },
+      {
+        name: "Edit Labour",
+        href: "/admin/labour/edit",
+      },
+    ],
+  },
+  {
+    name: "Settings",
+    href: "/admin/settings",
+    icon: Settings,
+  },
+]
 
-  if (isSuperAdmin) {
-    navigation.push({
-      title: "Super Admin",
-      items: [
-        {
-          title: "Users",
-          href: "/admin/users",
-          icon: Users,
-        },
-      ],
-    })
-  }
+export function AdminSidebar({ onLogout, loggingOut }: AdminSidebarProps) {
+  const pathname = usePathname()
 
   return (
-    <div className="flex flex-col space-y-6 w-full">
-      <MainNav className="px-6" />
-      <div className="flex-1 space-y-2 px-6">
-        {navigation.map((item) => (
-          <div key={item.title}>
-            <h4 className="mb-1 rounded-md px-2 text-sm font-semibold">{item.title}</h4>
-            {item.items?.map((item) => (
-              <SidebarNavItem key={item.href} title={item.title} href={item.href} icon={item.icon} />
-            ))}
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex items-center space-x-2">
+          <Building2 className="h-8 w-8 text-blue-600" />
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Admin Panel</h2>
+            <p className="text-sm text-gray-500">Bulu Enterprises</p>
           </div>
-        ))}
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4 space-y-2">
+        {navigation.map((item) => {
+          const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+
+          return (
+            <div key={item.name}>
+              <Link
+                href={item.href}
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  isActive ? "bg-blue-100 text-blue-700" : "text-gray-700 hover:bg-gray-100",
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span>{item.name}</span>
+              </Link>
+
+              {/* Sub-navigation for Labour */}
+              {item.children && isActive && (
+                <div className="ml-8 mt-2 space-y-1">
+                  {item.children.map((child) => (
+                    <Link
+                      key={child.name}
+                      href={child.href}
+                      className={cn(
+                        "block px-3 py-1 text-sm rounded-md transition-colors",
+                        pathname === child.href ? "bg-blue-50 text-blue-600" : "text-gray-600 hover:bg-gray-50",
+                      )}
+                    >
+                      {child.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </nav>
+
+      {/* Logout Button */}
+      <div className="p-4 border-t border-gray-200">
+        <Button
+          variant="ghost"
+          className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+          onClick={onLogout}
+          disabled={loggingOut}
+        >
+          {loggingOut ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-3"></div>
+              Logging out...
+            </>
+          ) : (
+            <>
+              <LogOut className="h-4 w-4 mr-3" />
+              Logout
+            </>
+          )}
+        </Button>
       </div>
     </div>
   )
