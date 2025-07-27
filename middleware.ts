@@ -4,8 +4,8 @@ import type { NextRequest } from "next/server"
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Check if accessing admin routes
-  if (pathname.startsWith("/admin") && pathname !== "/admin-access") {
+  // Check if accessing admin routes (but not the admin-access page or API routes)
+  if (pathname.startsWith("/admin") && pathname !== "/admin-access" && !pathname.startsWith("/api/")) {
     // Check for admin access cookie
     const adminAccess = request.cookies.get("admin_access")
 

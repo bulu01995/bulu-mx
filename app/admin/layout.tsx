@@ -22,6 +22,7 @@ import {
   ChevronDown,
   ChevronRight,
   LogOut,
+  Loader2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -132,7 +133,11 @@ export default function AdminLayout({
 
   const checkAdminAccess = async () => {
     try {
-      const response = await fetch("/api/admin/verify-key")
+      const response = await fetch("/api/admin/verify-key", {
+        method: "GET",
+        credentials: "include",
+      })
+
       const data = await response.json()
 
       if (data.hasAccess) {
@@ -142,6 +147,7 @@ export default function AdminLayout({
         router.push("/admin-access")
       }
     } catch (error) {
+      console.error("Access check error:", error)
       setHasAccess(false)
       router.push("/admin-access")
     } finally {
@@ -151,33 +157,14 @@ export default function AdminLayout({
 
   const handleLogout = async () => {
     try {
-      setLoading(true)
+      // Clear the admin access cookie by setting it to expire
+      document.cookie = "admin_access=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict"
 
-      // Call the logout API to clear the cookie properly
-      const response = await fetch("/api/admin/logout", {
-        method: "POST",
-      })
-
-      if (response.ok) {
-        // Clear local state
-        setHasAccess(false)
-        // Redirect to admin access page
-        router.push("/admin-access")
-      } else {
-        console.error("Logout failed")
-        // Fallback: clear cookie manually and redirect
-        document.cookie = "admin_access=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-        setHasAccess(false)
-        router.push("/admin-access")
-      }
+      // Redirect to admin access page
+      router.push("/admin-access")
+      router.refresh()
     } catch (error) {
       console.error("Logout error:", error)
-      // Fallback: clear cookie manually and redirect
-      document.cookie = "admin_access=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-      setHasAccess(false)
-      router.push("/admin-access")
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -194,8 +181,8 @@ export default function AdminLayout({
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Verifying access...</p>
+          <Loader2 className="animate-spin h-8 w-8 text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Verifying admin access...</p>
         </div>
       </div>
     )
@@ -350,15 +337,10 @@ export default function AdminLayout({
                   variant="ghost"
                   size="sm"
                   onClick={handleLogout}
-                  disabled={loading}
                   className="text-gray-500 hover:text-red-600"
                   title="Logout"
                 >
-                  {loading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
-                  ) : (
-                    <LogOut className="h-4 w-4" />
-                  )}
+                  <LogOut className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -396,15 +378,10 @@ export default function AdminLayout({
                   variant="outline"
                   size="sm"
                   onClick={handleLogout}
-                  disabled={loading}
                   className="text-gray-600 hover:text-red-600 border-gray-300 bg-transparent"
                 >
-                  {loading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
-                  ) : (
-                    <LogOut className="h-4 w-4 mr-2" />
-                  )}
-                  {loading ? "Logging out..." : "Logout"}
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
                 </Button>
               </div>
             </div>

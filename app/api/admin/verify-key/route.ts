@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { cookies } from "next/headers"
 
 const ADMIN_ACCESS_KEY = "@AJAYkn8085123"
 
@@ -9,13 +8,13 @@ export async function POST(request: NextRequest) {
     const { key } = body
 
     if (!key) {
-      return NextResponse.json({ success: false, message: "Access key is required" }, { status: 400 })
+      return NextResponse.json({ success: false, error: "Access key is required" }, { status: 400 })
     }
 
     if (key === ADMIN_ACCESS_KEY) {
-      // Set secure cookie for admin access
-      const response = NextResponse.json({ success: true })
+      const response = NextResponse.json({ success: true, message: "Access granted" })
 
+      // Set secure cookie for admin access
       response.cookies.set("admin_access", "granted", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -26,18 +25,17 @@ export async function POST(request: NextRequest) {
 
       return response
     } else {
-      return NextResponse.json({ success: false, message: "Invalid access key" }, { status: 401 })
+      return NextResponse.json({ success: false, error: "Invalid access key" }, { status: 401 })
     }
   } catch (error) {
     console.error("Admin key verification error:", error)
-    return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const cookieStore = cookies()
-    const adminAccess = cookieStore.get("admin_access")
+    const adminAccess = request.cookies.get("admin_access")
 
     if (adminAccess && adminAccess.value === "granted") {
       return NextResponse.json({ hasAccess: true })
