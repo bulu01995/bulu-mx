@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type React from "react"
 import {
   LayoutDashboard,
@@ -21,12 +21,13 @@ import {
   Key,
   ChevronDown,
   ChevronRight,
+  LogOut,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Suspense } from "react"
 
 const sidebarItems = [
@@ -120,7 +121,43 @@ export default function AdminLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [expandedItems, setExpandedItems] = useState<string[]>([])
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null)
+  const [loading, setLoading] = useState(true)
   const pathname = usePathname()
+  const router = useRouter()
+
+  useEffect(() => {
+    checkAdminAccess()
+  }, [])
+
+  const checkAdminAccess = async () => {
+    try {
+      const response = await fetch("/api/admin/verify-key")
+      const data = await response.json()
+
+      if (data.hasAccess) {
+        setHasAccess(true)
+      } else {
+        setHasAccess(false)
+        router.push("/admin-access")
+      }
+    } catch (error) {
+      setHasAccess(false)
+      router.push("/admin-access")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleLogout = async () => {
+    try {
+      // Clear the admin access cookie
+      document.cookie = "admin_access=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+      router.push("/admin-access")
+    } catch (error) {
+      console.error("Logout error:", error)
+    }
+  }
 
   const toggleExpanded = (itemName: string) => {
     setExpandedItems((prev) =>
@@ -129,6 +166,23 @@ export default function AdminLayout({
   }
 
   const isItemExpanded = (itemName: string) => expandedItems.includes(itemName)
+
+  // Show loading state while checking access
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Verifying access...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't render admin layout if no access
+  if (!hasAccess) {
+    return null
+  }
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
@@ -270,6 +324,15 @@ export default function AdminLayout({
                   <p className="text-sm font-medium text-gray-900 truncate">Admin User</p>
                   <p className="text-xs text-gray-500 truncate">admin@bulu.com</p>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="text-gray-500 hover:text-red-600"
+                  title="Logout"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           </div>
@@ -301,6 +364,16 @@ export default function AdminLayout({
                   <Activity className="h-4 w-4 text-green-600" />
                   <span className="text-sm font-medium text-green-700">Online</span>
                 </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="text-gray-600 hover:text-red-600 border-gray-300 bg-transparent"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
               </div>
             </div>
           </header>

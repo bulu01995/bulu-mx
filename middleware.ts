@@ -2,7 +2,19 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
 export function middleware(request: NextRequest) {
-  // Add any middleware logic here if needed
+  const { pathname } = request.nextUrl
+
+  // Check if accessing admin routes
+  if (pathname.startsWith("/admin") && pathname !== "/admin-access") {
+    // Check for admin access cookie
+    const adminAccess = request.cookies.get("admin_access")
+
+    if (!adminAccess || adminAccess.value !== "granted") {
+      // Redirect to admin access page
+      return NextResponse.redirect(new URL("/admin-access", request.url))
+    }
+  }
+
   return NextResponse.next()
 }
 
